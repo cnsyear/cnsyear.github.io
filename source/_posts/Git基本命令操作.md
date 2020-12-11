@@ -35,6 +35,9 @@ categories: 版本控制
 
 当执行 git checkout . 或者 git checkout -- <file> 命令时，会用暂存区全部或指定的文件替换工作区的文件。这个操作很危险，会清除工作区中未添加到暂存区的改动。
 
+工作流程：
+![image](/static/img/1.png)
+
 #### 二、常用命令
 
 下面只记录常用的命令，对于不常用的请查阅[Git官方命令手册](https://git-scm.com/docs)。
@@ -151,8 +154,18 @@ git checkout (branchname)
 #列出分支基本命令：
 git branch
 
+#列出所有远程分支
+git branch -r
+
 #删除分支命令：
 git branch -d (branchname)
+
+#删除远程分支
+git push origin --delete [branch-name]
+git branch -dr [remote/branch]
+
+#合并指定分支到当前分支
+git merge [branch]
 
 #分支合并 将任何分支合并到当前分支中去
 git merge
@@ -165,5 +178,8 @@ git merge
 git tag
 
 #创建标签
-git tag tagName
+git tag [tag]
+
+# 删除本地tag
+git tag -d [tag]
 ```
