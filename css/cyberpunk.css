@@ -11650,7 +11650,7 @@ figure.highlight .section {
     padding: 1.5rem 1rem;
   }
 }
-img {
+.gallery-item img {
   height: auto;
   max-width: 60%;
 }
