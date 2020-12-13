@@ -1,19 +1,4 @@
 widgets:
-    # Recent posts widget configurations
-    -
-        # Where should the widget be placed, left sidebar or right sidebar
-        position: left
-        type: recent_posts
-    # Categories widget configurations
-    -
-        # Where should the widget be placed, left sidebar or right sidebar
-        position: left
-        type: categories
-    # Tags widget configurations
-    -
-        # Where should the widget be placed, left sidebar or right sidebar
-        position: left
-        type: tags
     # Table of contents widget configurations
     -
         # Where should the widget be placed, left sidebar or right sidebar
@@ -25,3 +10,13 @@ widgets:
         collapsed: true
         # Maximum level of headings to show (1-6)
         depth: 3
+    # Categories widget configurations
+    -
+        # Where should the widget be placed, left sidebar or right sidebar
+        position: left
+        type: categories
+    # Tags widget configurations
+    -
+        # Where should the widget be placed, left sidebar or right sidebar
+        position: left
+        type: tags

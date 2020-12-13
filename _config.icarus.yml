@@ -201,7 +201,7 @@ sidebar:
     # Left sidebar configurations
     left:
         # Whether the sidebar sticks to the top when page scrolls
-        sticky: false
+        sticky: true
     # Right sidebar configurations
     right:
         # Whether the sidebar sticks to the top when page scrolls
@@ -284,7 +284,9 @@ widgets:
         type: links
         # Names and URLs of the sites
         links:
-            Hexo: 'https://hexo.io'
+            Hexo官网: 'https://hexo.io'
+            Git官网: 'https://git-scm.com'
+            RabbitMQ官网: 'https://www.rabbitmq.com'
     # Google FeedBurner email subscription widget configurations
     #-
     #    # Where should the widget be placed, left sidebar or right sidebar
