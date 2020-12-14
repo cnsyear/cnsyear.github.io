@@ -13,7 +13,7 @@ timezone: ''
 
 # URL
 ## If your site is put in a subdirectory, set url as 'http://example.com/child' and root as '/child/'
-url: https://cnsyear.github.io
+url: https://cnsyear.gitee.io
 root: /
 #permalink: :year/:month/:day/:title/
 #permalink_defaults:
@@ -113,3 +113,6 @@ deploy:
 - type: git
   repo: https://github.com/cnsyear/cnsyear.github.io.git
   branch: main
+- type: git
+  repo: https://gitee.com/cnsyear/cnsyear.git
+  branch: master

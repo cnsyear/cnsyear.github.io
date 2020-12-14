@@ -106,7 +106,7 @@ navbar:
     links:
         Download on GitHub:
             icon: fab fa-github
-            url: 'https://github.com/cnsyear'
+            url: 'https://gitee.com/cnsyear'
 # Page footer configurations
 footer:
     # Links to be shown on the right of the footer section
@@ -227,7 +227,7 @@ widgets:
         # Email address for the Gravatar
         gravatar: 
         # URL or path for the follow button
-        follow_link: 'https://github.com/cnsyear'
+        follow_link: 'https://gitee.com/cnsyear'
         # Links to be shown on the bottom of the profile widget
         social_links:
             #Github:
