@@ -31,12 +31,12 @@ RabbitMQ架构图：
 - Virtual host(虚拟主机): 出于多租户和安全因素设计的，把 AMQP 的基本组件划分到一个虚拟的分组中，类似于网络中的 namespace 概念。当多个不同的用户使用同一个 RabbitMQ server 提供的服务时，可以划分出多个vhost，每个用户在自己的 vhost 创建 exchange／queue 等
 - Exchange 交换机: 消息直接投递到交换机上，然后交换机根据消息的路由key 来路由到对应绑定的队列上
 - Binding: 绑定exchange 与queue的虚拟连接,bingding中可以包含route_key
-- route_key 路由key ，他的作用是在交换机上通过route_key来把消息路由到哪个队列上
+- Route_key：路由key ，他的作用是在交换机上通过route_key来把消息路由到哪个队列上
 - Queue：队列，用于来保存消息的载体，有消费者监听，然后消费消息
 
 #### 三、RabbitMQ工作模式
 
-https://www.rabbitmq.com/getstarted.html
+[官方教程](https://www.rabbitmq.com/getstarted.html)
 
 ##### 1、简单模式 Hello World
 ![image](/static/img/6.png)
@@ -51,8 +51,8 @@ https://www.rabbitmq.com/getstarted.html
 ```
 <!--添加依赖-->
 <dependency>
-	<groupId>com.rabbitmq</groupId>
-	<artifactId>amqp-client</artifactId>
+   <groupId>com.rabbitmq</groupId>
+   <artifactId>amqp-client</artifactId>
    <version>5.7.1</version>
 </dependency>
 
@@ -163,7 +163,7 @@ class  Reciver extends DefaultConsumer {
 }
 ```
 
-##### 2、工作队列 Work queues
+##### 2、工作队列 Work Queues
 ![image](/static/img/7.png)
 
 - Work Queues：与入门程序的简单模式相比，多了一个或一些消费端，多个消费端共同消费同一个队列中的消息。
@@ -304,10 +304,11 @@ public class Consumer2 {
 - P：生产者，也就是要发送消息的程序，但是不再发送到队列中，而是发给X（交换机）
 - C：消费者，消息的接收者，会一直等待消息到来
 - Queue：消息队列，接收消息、缓存消息
-- Exchange：交换机（X）。一方面，接收生产者发送的消息。另一方面，知道如何处理消息，例如递交给某个特别队列、递交给所有队列、或是将消息丢弃。到底如何操作，取决于Exchange的类型。Exchange有常见以下3种类型：
-	- Fanout：广播，将消息交给所有绑定到交换机的队列
-	- Direct：定向，把消息交给符合指定routing key 的队列
-	- Topic：通配符，把消息交给符合routing pattern（路由模式） 的队列
+
+Exchange：交换机（X）。一方面，接收生产者发送的消息。另一方面，知道如何处理消息，例如递交给某个特别队列、递交给所有队列、或是将消息丢弃。到底如何操作，取决于Exchange的类型。Exchange有常见以下3种类型：
+- Fanout：广播，将消息交给所有绑定到交换机的队列
+- Direct：定向，把消息交给符合指定routing key 的队列
+- Topic：通配符，把消息交给符合routing pattern（路由模式） 的队列
 
 Exchange（交换机）只负责转发消息，不具备存储消息的能力，因此如果没有任何队列与 Exchange 绑定，或者没有符合路由规则的队列，那么消息会丢失！
 
@@ -334,7 +335,7 @@ public class Publisher {
 
     public static void main(String[] args) throws Exception {
         // 发布订阅模式
-        // 发布者发布消息 >> 交换机需要手动创建
+        // 发布者发布消息 >> 交换机需要手动创建 类型fanout
         Channel channel = factory.newConnection().createChannel();
         for (int i = 0; i < 100; i++) {
             String message = "测试内容" + i;
@@ -432,8 +433,302 @@ public class Subscribe2 {
 ##### 4、路由 Routing
 ![image](/static/img/9.png)
 
+模式说明：
+- 队列与交换机的绑定，不能是任意绑定了，而是要指定一个 RoutingKey（路由key）
+- 消息的发送方在向 Exchange 发送消息时，也必须指定消息的 RoutingKey
+- Exchange 不再把消息交给每一个绑定的队列，而是根据消息的 Routing Key 进行判断，只有队列的Routingkey 与消息的 Routing key 完全一致，才会接收到消息
+
+图解：
+- P：生产者，向 Exchange 发送消息，发送消息时，会指定一个routing key
+- X：Exchange（交换机），接收生产者的消息，然后把消息递交给与 routing key 完全匹配的队列
+- C1：消费者，其所在队列指定了需要 routing key 为 error 的消息
+- C2：消费者，其所在队列指定了需要 routing key 为 info、error、warning 的消息
+
+代码示例：
+```
+//生产者
+package com.example.rabbitmqdemo.routing;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConnectionFactory;
+
+public class Producer {
+
+    private static String ROUTING_EXCHANGE = "routing_exchange";
+    private static ConnectionFactory factory = new ConnectionFactory();
+
+    static {
+        factory.setHost("192.168.84.39");
+        factory.setPort(5672);
+        factory.setUsername("zhaojie");
+        factory.setPassword("zhaojie");
+        factory.setVirtualHost("/zhaojie");
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 路由模式
+        // 生产者发布消息 >> 交换机需要手动创建 类型Direct
+        Channel channel = factory.newConnection().createChannel();
+        for (int i = 0; i < 100; i++) {
+            String message = "测试内容" + i;
+
+            //第一个参数交换机名字   第二个参数作为 消息的routing key
+            String routingKey = (i % 2 == 0) ? "even" : "odd";
+
+            channel.basicPublish(ROUTING_EXCHANGE, routingKey, null, message.getBytes());
+            System.out.println(" [x] Sent '" + message + "'");
+        }
+    }
+}
+
+//消费者1
+package com.example.rabbitmqdemo.routing;
+
+import com.rabbitmq.client.*;
+
+import java.io.IOException;
+
+public class Consumer1 {
+
+    private static String ROUTING_EXCHANGE = "routing_exchange";
+    private static String ROUTING1_QUEUE = "routing1_queue";
+
+    private static ConnectionFactory factory = new ConnectionFactory();
+
+    static {
+        factory.setHost("192.168.84.39");
+        factory.setPort(5672);
+        factory.setUsername("zhaojie");
+        factory.setPassword("zhaojie");
+        factory.setVirtualHost("/zhaojie");
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 路由模式
+        // 消费者1消费消息
+        Channel channel = factory.newConnection().createChannel();
+        //声明队列信息
+        channel.queueDeclare(ROUTING1_QUEUE, false, false, false, null);
+        //queueBind用于将队列与交换机绑定
+        //参数1：队列名 参数2：交互机名  参数三：路由key
+        //注意这里绑定路由key >>  odd，可以绑定多个
+        channel.queueBind(ROUTING1_QUEUE, ROUTING_EXCHANGE, "odd");
+        channel.basicQos(1);
+        channel.basicConsume(ROUTING1_QUEUE, false, new DefaultConsumer(channel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+                System.out.println("订阅者1消费消息 只消费奇数：" + new String(body));
+                channel.basicAck(envelope.getDeliveryTag(), false);
+            }
+        });
+    }
+}
+
+//消费者2
+package com.example.rabbitmqdemo.routing;
+
+import com.rabbitmq.client.*;
+
+import java.io.IOException;
+
+public class Consumer2 {
+
+    private static String ROUTING_EXCHANGE = "routing_exchange";
+    private static String ROUTING2_QUEUE = "routing2_queue";
+
+    private static ConnectionFactory factory = new ConnectionFactory();
+
+    static {
+        factory.setHost("192.168.84.39");
+        factory.setPort(5672);
+        factory.setUsername("zhaojie");
+        factory.setPassword("zhaojie");
+        factory.setVirtualHost("/zhaojie");
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 路由模式
+        // 消费者2消费消息
+        Channel channel = factory.newConnection().createChannel();
+        //声明队列信息
+        channel.queueDeclare(ROUTING2_QUEUE, false, false, false, null);
+        //queueBind用于将队列与交换机绑定
+        //参数1：队列名 参数2：交互机名  参数三：路由key
+        //注意这里绑定路由key >>  even，可以绑定多个
+        channel.queueBind(ROUTING2_QUEUE, ROUTING_EXCHANGE, "even");
+        channel.basicQos(1);
+        channel.basicConsume(ROUTING2_QUEUE, false, new DefaultConsumer(channel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+                System.out.println("订阅者1消费消息 只消费偶数：" + new String(body));
+                channel.basicAck(envelope.getDeliveryTag(), false);
+            }
+        });
+    }
+}
+```
+
 ##### 5、主题 Topics
 ![image](/static/img/10.png)
 
-##### 6、远程调用 RPC（不常用）
+模式说明:
+- Topic 类型与 Direct 相比，都是可以根据 RoutingKey 把消息路由到不同的队列。只不过 Topic 类型Exchange 可以让队列在绑定 Routing key 的时候使用通配符！
+- Routingkey 一般都是有一个或多个单词组成，多个单词之间以”.”分割，例如： item.insert 
+- 通配符规则：# 匹配一个或多个词，* 匹配不多不少恰好1个词，例如：item.# 能够匹配 item.insert.abc 或者 item.insert，item.* 只能匹配 item.insert
+
+代码示例：
+```
+//生产者
+package com.example.rabbitmqdemo.topics;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.ConnectionFactory;
+
+public class Producer {
+
+    private static String TOPIC_EXCHANGE = "topic_exchange";
+    private static ConnectionFactory factory = new ConnectionFactory();
+
+    static {
+        factory.setHost("192.168.84.39");
+        factory.setPort(5672);
+        factory.setUsername("zhaojie");
+        factory.setPassword("zhaojie");
+        factory.setVirtualHost("/zhaojie");
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 主题模式
+        // 发布者发布消息 >> 交换机需要手动创建 类型Topic
+        Channel channel = factory.newConnection().createChannel();
+        String routingKey1 = "test.key1";
+        String routingKey2 = "test.key2";
+        String routingKey3 = "test.key.key3";
+
+        channel.basicPublish(TOPIC_EXCHANGE,routingKey1,null,"我是第一条消息".getBytes());
+        channel.basicPublish(TOPIC_EXCHANGE,routingKey2,null,"我是第二条消息".getBytes());
+        channel.basicPublish(TOPIC_EXCHANGE,routingKey3,null,"我是第三条消息".getBytes());
+    }
+}
+
+//消费者1
+package com.example.rabbitmqdemo.topics;
+
+import com.rabbitmq.client.*;
+
+import java.io.IOException;
+
+public class Consumer1 {
+
+    private static String TOPIC_EXCHANGE = "topic_exchange";
+    private static String TOPIC1_QUEUE = "topic1_queue";
+
+    private static ConnectionFactory factory = new ConnectionFactory();
+
+    static {
+        factory.setHost("192.168.84.39");
+        factory.setPort(5672);
+        factory.setUsername("zhaojie");
+        factory.setPassword("zhaojie");
+        factory.setVirtualHost("/zhaojie");
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 主题模式
+        // 消费者1消费消息
+        Channel channel = factory.newConnection().createChannel();
+        //声明队列信息
+        channel.queueDeclare(TOPIC1_QUEUE, false, false, false, null);
+        //queueBind用于将队列与交换机绑定
+        //参数1：队列名 参数2：交互机名  参数三：路由key
+        //注意这里绑定路由key >>  test.#  可以匹配一个单词  也可以匹配多个单词
+        channel.queueBind(TOPIC1_QUEUE, TOPIC_EXCHANGE, "test.#");
+        channel.basicQos(1);
+        channel.basicConsume(TOPIC1_QUEUE, false, new DefaultConsumer(channel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+                System.out.println("订阅者1消费消息 可以匹配一个单词  也可以匹配多个单词：" + new String(body));
+                channel.basicAck(envelope.getDeliveryTag(), false);
+            }
+        });
+    }
+}
+
+
+//消费者2
+package com.example.rabbitmqdemo.topics;
+
+import com.rabbitmq.client.*;
+
+import java.io.IOException;
+
+public class Consumer2 {
+
+    private static String TOPIC_EXCHANGE = "topic_exchange";
+    private static String TOPIC2_QUEUE = "topic2_queue";
+
+    private static ConnectionFactory factory = new ConnectionFactory();
+
+    static {
+        factory.setHost("192.168.84.39");
+        factory.setPort(5672);
+        factory.setUsername("zhaojie");
+        factory.setPassword("zhaojie");
+        factory.setVirtualHost("/zhaojie");
+    }
+
+    public static void main(String[] args) throws Exception {
+        // 主题模式
+        // 消费者2消费消息
+        Channel channel = factory.newConnection().createChannel();
+        //声明队列信息
+        channel.queueDeclare(TOPIC2_QUEUE, false, false, false, null);
+        //queueBind用于将队列与交换机绑定
+        //参数1：队列名 参数2：交互机名  参数三：路由key
+        //注意这里绑定路由key >>  test.*  可以匹配一个单词
+        channel.queueBind(TOPIC2_QUEUE, TOPIC_EXCHANGE, "test.*");
+        channel.basicQos(1);
+        channel.basicConsume(TOPIC2_QUEUE, false, new DefaultConsumer(channel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope, AMQP.BasicProperties properties, byte[] body) throws IOException {
+                System.out.println("订阅者2消费消息 可以匹配一个单词：" + new String(body));
+                channel.basicAck(envelope.getDeliveryTag(), false);
+            }
+        });
+    }
+}
+```
+
+
+##### ~~6、远程调用 RPC~~
 ![image](/static/img/11.png)
+
+~~尽管RPC是计算中非常普遍的模式，但它经常受到批评。当程序员不知道函数调用是本地的还是缓慢的RPC时，就会出现问题。这样的混乱会导致系统变幻莫测，并给调试增加了不必要的复杂性。滥用RPC可能会导致无法维护的意大利面条代码，而不是简化软件。~~
+
+~~[参考官方教程，这里不再叙述](https://www.rabbitmq.com/tutorials/tutorial-six-python.html)~~
+
+#### 四、RabbitMQ消息确认机制
+ 
+[官方教程](https://www.rabbitmq.com/confirms.html)
+
+##### 1、生产者确认
+
+RabbitMQ在消息传递过程中充当了代理人（Broker）的角色，那么生产者（Producer）怎么知道消息是否被正确投递到Broker了呢?
+
+RabbitMQ提供了监听器（Listener）来接收消息的投递状态。消息确认涉及两种状态：Confirm和Return。
+- Confirm：代表生产者将消息送到Broker的状态，会出现两种结果：ack(Broker已接收)、nack(Broker拒绝接收可能队列已满、限流、IO异常等)
+- Return：代表消息被Broker正常接收（ack）后，但没有对应的队列进行投递时产生的状态，消息被退回给生产者。
+
+注意：以上两种情况只代表生产者（Producer）和Broker之间的消息投递情况，与消费者是否接收/确认无关。
+
+
+##### 2、消费者确认
+
+
+
+
+
+
+
+
+
