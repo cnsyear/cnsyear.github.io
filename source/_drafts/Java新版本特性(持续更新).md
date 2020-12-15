@@ -1,5 +1,5 @@
 ---
-title: Java新版本特性(持续更新2020/9/15发布Java 15)
+title: Java新版本特性(持续更新)
 toc: true
 abbrlink: a2f40993
 date: 2020-12-14 22:13:41

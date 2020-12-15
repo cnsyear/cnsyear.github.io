@@ -100,6 +100,7 @@ navbar:
     # Navigation menu items
     menu:
         首页: /
+        索引: /indexs
         归档: /archives
         关于: /about
     # Links to be shown on the right of the navigation bar
