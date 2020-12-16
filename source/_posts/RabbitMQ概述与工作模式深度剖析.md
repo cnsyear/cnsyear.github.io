@@ -890,3 +890,5 @@ public class Consumer1 {
 本文讲解了RabbitMQ的架构图、工作模式和消息的确认机制，如有讲解不清楚的地方可以查阅[官方教程](https://www.rabbitmq.com/getstarted.html)。
 
 工作项目一般都不直接使用amqp-client，都是整合Spring/SpringBoot来使用如何整合请参考后续内容。
+
+[传送门>>RabbitMQ系列文章](https://cnsyear.gitee.io/indexs)
