@@ -32,6 +32,7 @@ spring:
     password: zhaojie
     virtual-host: /zhaojie
 ```
+#### 二、RabbitMQ工作模式
 
 ##### 1、简单模式 Hello World
 
@@ -485,11 +486,21 @@ topic1 只接收topic.# 匹配一个单词 也可以匹配多个单词  received
 topic1 只接收topic.# 匹配一个单词 也可以匹配多个单词  received message : key2消息c
 ```
 
-#### 二、消息确认机制
+#### 三、RabbitMQ消息确认机制
 
 该示例基于4、路由 Routing例子
 
 ##### 1、生产者Confirm和Return机制
+
+在使用 RabbitMQ 的时候，作为消息发送方希望杜绝任何消息丢失或者投递失败场景。RabbitMQ 为我们提供了Confirm和Return机制用来控制消息的投递可靠性模式。
+
+RabbitMQ整个消息投递的路径为：producer--->RabbitMQ broker--->exchange--->queue--->consumer
+
+- 消息从 producer 到 exchange 则会返回一个 confirmCallback
+- 消息从 exchange-->queue 投递失败则会返回一个 returnCallback
+
+我们将利用这两个 callback 控制消息的可靠性投递
+
 - 使用rabbitTemplate.setConfirmCallback设置回调函数。当消息发送到exchange后回调confirm方法。在方法中判断ack，如果为true，则发送成功，如果为false，则发送失败，需要处理。
 - 使用rabbitTemplate.setReturnCallback设置退回函数，当消息从exchange路由到queue失败后，如果设置了rabbitTemplate.setMandatory(true)参数，则会将消息退回给producer。并执行回调函数returnedMessage
 
@@ -732,4 +743,10 @@ public class RoutingProducer {
 ```
 
 可以看到该消息状态为unacked,由于配置了default-requeue-rejected: true不会被丢弃，每次重启后会再次尝试发送该条消息！！
+
+这里的手动ack模式都是使用yml配置文件的方式指定的，如果你是使用代码的方式注入的，要注意代码优于配置，会覆盖配置文件。
+正常处理流程都是如果消费端没有出现异常，则调用channel.basicAck(deliveryTag,false)方法确认签收消息; 如果消费端出现异常，则在catch中调用 basicNack或 basicReject让MQ重新发送消息。
+
 ![image](/static/img/14.png)
+
+#### 四、RabbitMQ

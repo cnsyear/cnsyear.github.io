@@ -3,8 +3,8 @@ title: CentOS7安装RabbitMQ3.6.5
 toc: true
 abbrlink: 64fadf5f
 date: 2020-12-13 20:31:56
-tags: RabbitMQ
-categories: 环境搭建
+tags: CentOS
+categories: Linux运维
 ---
 
 #### 下载相关文件
