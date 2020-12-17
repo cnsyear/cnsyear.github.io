@@ -698,11 +698,16 @@ public class RoutingConcumer {
 
     @RabbitListener(queues = RoutingConfig.BOOT_DIRECT_QUEUE_2)
     public void pubsub2Consumer(String msg, Channel channel, Message message) throws IOException {
-        System.out.println("出现异常后不会执行手动ACK，MQ会被重复尝试投递-----routing2 只接收direct.key2 received message : " + msg);
-        //出现异常，不会执行手动ack
-        int a =1/0;
-        //手动ack
-        channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
+        try {
+            System.out.println("出现异常后不会执行手动ACK，MQ会被重复尝试投递-----routing2 只接收direct.key2 received message : " + msg);
+            //出现异常，不会执行手动ack
+            int a =1/0;
+            //手动ack
+            channel.basicAck(message.getMessageProperties().getDeliveryTag(),false);
+        } catch (IOException e) {
+            // 拒绝当前消息，并把消息返回原队列
+            channel.basicNack(message.getMessageProperties().getDeliveryTag(), false, true);
+        }
     }
 }
 
@@ -749,4 +754,101 @@ public class RoutingProducer {
 
 ![image](/static/img/14.png)
 
-#### 四、RabbitMQ
+#### 四、RabbitMQ消费端限流
+假设一个场景，首先，我们 Rabbitmq 服务器积压了有上万条未处理的消息，我们随便打开一个消费者客户端，会出现这样情况: 巨量的消息瞬间全部推送过来，但是我们单个客户端无法同时处理这么多数据!
+
+当数据量特别大的时候，我们对生产端限流肯定是不科学的，因为有时候并发量就是特别大，有时候并发量又特别少，我们无法约束生产端，这是用户的行为。所以我们应该对消费端限流，用于保持消费端的稳定，当消息数量激增的时候很有可能造成资源耗尽，以及影响服务的性能，导致系统的卡顿甚至直接崩溃。
+
+RabbitMQ提供了一种qos（服务质量保证）功能，即在非自动确认消息的前提下，如果一定数目的消息（通过基于consumer或者channel设置qos的值）未被确认前，不进行消费新的消息。
+
+该示例基于2、工作队列 Work Queues
+
+```
+#注意：消费端的确认模式一定为手动确认。acknowledge="manual"，这里的设置模式是全局的会对所有的队列生效！！！注意一般需要单独设置！！
+#消费者每次从队列获取的消息数量 (默认一次250个)
+spring.rabbitmq.listener.simple.prefetch=10
+
+//生产者发送100条消息测试消费者每次消费消息的数量
+package com.example.rabbitmqspringboot.workqueue;
+
+import com.rabbitmq.client.Channel;
+import org.springframework.amqp.core.Message;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+
+@Component
+public class WorkConcumer {
+
+    //工作队列模式 消息会被平均分配到每一个消费者上
+    @RabbitListener(queues = WorkConfig.BOOT_WORK_QUEUE)
+    public void workConsumer1(String msg, Channel channel, Message message) throws IOException {
+        //模拟测试
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+	//手动签收
+	channel.basicAck(message.getMessageProperties().getDeliveryTag(), true);
+        System.out.println("work1 received message : " + msg);
+    }
+}
+```
+我们从下图中发现 Unacked值一直都是10，Unacked的值在这里代表消费者正在处理的消息，消费者一次性最多处理10条消息，达到了消费者限流的预期功能。
+![image](/static/img/15.png)
+
+#### 五、RabbitMQ过期时间(TTL)
+TTL 全称 Time To Live（存活时间/过期时间）。
+当消息到达存活时间后，还没有被消费，会被自动清除。
+RabbitMQ可以对消息设置过期时间，也可以对整个队列（Queue）设置过期时间。
+
+该示例基于2、工作队列 Work Queues
+
+```
+//配置
+package com.example.rabbitmqspringboot.workqueue;
+
+import org.springframework.amqp.core.Queue;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class WorkConfig {
+
+    public static final String BOOT_WORK_QUEUE = "BOOT_WORK_QUEUE";
+
+    @Bean(BOOT_WORK_QUEUE)
+    public Queue setQueue() {
+
+        /*Map<String, Object> args = new HashMap<>(2);
+        //声明过期时间5秒
+        args.put("x-message-ttl", 5000);
+        return QueueBuilder.durable(BOOT_WORK_QUEUE).withArguments(args).build();*/
+        
+        Queue queue = new Queue(BOOT_WORK_QUEUE);
+        //给队列设置过期时间 单位毫秒
+        queue.addArgument("x-message-ttl", 30 * 1000);
+        return queue;
+    }
+}
+
+// 测试消息过期需要注释掉消费端代码，否则看不出效果
+
+```
+如果BOOT_WORK_QUEUE 之前创建过需要删除，重新启动会发现新创建的队列会有 TTL标记，测试发送消息如果消息超过30秒未被消费，就会被丢弃。
+- 设置队列过期时间使用参数：x-message-ttl，单位：ms(毫秒)，会对整个队列消息统一过期。
+- 设置消息过期时间使用参数：expiration。单位：ms(毫秒)，当该消息在队列头部时（消费时），会单独判断这一消息是否过期。
+如果两者都进行了设置，以时间短的为准。
+
+![image](/static/img/16.png)
+
+
+
+
+
+#### 六、RabbitMQ死信队列
+
+
+#### 七、RabbitMQ延迟队列
