@@ -4,5 +4,5 @@ toc: true
 abbrlink: 7887f53a
 date: 2020-12-15 15:45:57
 tags: CentOS
-categories: Linux运维
+categories: 
 ---

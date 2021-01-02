@@ -2,7 +2,7 @@
 title: RabbitMQ项目开发与高级特性的使用
 toc: true
 tags: RabbitMQ
-categories: 消息中间件
+categories: 
 abbrlink: 3de380d5
 date: 2020-12-16 14:11:31
 ---

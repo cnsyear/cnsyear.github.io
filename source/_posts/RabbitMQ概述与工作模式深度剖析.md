@@ -4,7 +4,7 @@ toc: true
 abbrlink: f73020b3
 date: 2020-12-13 19:57:23
 tags: RabbitMQ
-categories: 消息中间件
+categories: 
 ---
 
 #### 一、什么是消息中间件？

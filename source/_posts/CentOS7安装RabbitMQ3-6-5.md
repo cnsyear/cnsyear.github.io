@@ -4,7 +4,7 @@ toc: true
 abbrlink: 64fadf5f
 date: 2020-12-13 20:31:56
 tags: CentOS
-categories: Linux运维
+categories: 
 ---
 
 #### 下载相关文件
